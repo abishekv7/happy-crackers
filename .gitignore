@@ -1,2 +1,9 @@
 node_modules/
+package-lock.json
+backend/node_modules/
+backend-minimal/
+backend/crackerkart-backend.zip
+backend/crackerkart-minimal.zip
 .DS_Store
+backend/.DS_Store
+catalyst-debug.log
