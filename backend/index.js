@@ -14,13 +14,21 @@ const allowedOrigins = new Set([
   'http://localhost:5500'
 ]);
 
-app.use(cors({
-  origin(origin, callback) {
-    if (!origin || allowedOrigins.has(origin)) return callback(null, true);
-    return callback(new Error('Origin not allowed by CORS'));
-  },
-  methods: ['POST', 'GET', 'OPTIONS']
-}));
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (!origin || allowedOrigins.has(origin)) {
+    res.header('Access-Control-Allow-Origin', origin || '*');
+    res.header('Vary', 'Origin');
+    res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    res.header('Access-Control-Max-Age', '86400');
+  }
+  if (req.method === 'OPTIONS') {
+    if (origin && !allowedOrigins.has(origin)) return res.status(403).end();
+    return res.status(204).end();
+  }
+  next();
+});
 
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
