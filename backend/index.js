@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
 const catalyst = require('zcatalyst-sdk-node');
 
 const app = express();
@@ -65,6 +67,9 @@ app.post('/api/email/send', upload.single('pdf'), async (req, res) => {
       'Order Total: ' + (orderTotal || '-')
     ].join('\n');
 
+    const tempPdfPath = path.join('/tmp', req.file.originalname || 'CrackerKart_Order.pdf');
+    fs.writeFileSync(tempPdfPath, req.file.buffer);
+
     await appInstance.email().sendMail({
       from_email: FROM_EMAIL,
       to_email: [TO_EMAIL],
@@ -73,10 +78,11 @@ app.post('/api/email/send', upload.single('pdf'), async (req, res) => {
       html_mode: false,
       attachments: [{
         filename: req.file.originalname || 'CrackerKart_Order.pdf',
-        content: req.file.buffer
+        content: fs.createReadStream(tempPdfPath)
       }]
     });
 
+    fs.unlink(tempPdfPath, () => {});
     return res.json({ ok: true, message: 'Order email sent successfully.' });
   } catch (error) {
     console.error('Order email error:', error);
