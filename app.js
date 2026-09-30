@@ -50,34 +50,110 @@ function totals(){let sub=Object.entries(cart).reduce((s,[id,q])=>s+raw.find(p=>
 function renderCart(){const items=Object.entries(cart).map(([id,q])=>({p:raw.find(p=>p.id==id),q}));document.getElementById('cartItems').innerHTML=items.length?items.map(({p,q})=>`<div class="cart-row"><div><strong>${escapeHtml(p.name)}</strong><br><small>${money(p.price)} × ${q}</small></div><b>${money(p.price*q)}</b><div class="row-controls"><div class="qty"><button data-cminus="${p.id}">−</button><input data-cinput="${p.id}" value="${q}" type="number" min="0"><button data-cplus="${p.id}">+</button></div><button class="remove" data-remove="${p.id}">Remove</button></div></div>`).join(''):'<div class="empty">Your cart is empty.</div>';const t=totals();document.getElementById('subtotal').textContent=money(t.sub);document.getElementById('packing').textContent=money(t.pack);document.getElementById('total').textContent=money(t.total);document.getElementById('minimumMsg').textContent=t.sub?`Minimum order: ${money(minimumOrder)} · ${t.sub<minimumOrder?money(minimumOrder-t.sub)+' more needed':''}`:`Minimum order: ${money(minimumOrder)}`;document.querySelectorAll('[data-cminus]').forEach(b=>b.onclick=()=>setQty(+b.dataset.cminus,(cart[b.dataset.cminus]||0)-1));document.querySelectorAll('[data-cplus]').forEach(b=>b.onclick=()=>setQty(+b.dataset.cplus,(cart[b.dataset.cplus]||0)+1));document.querySelectorAll('[data-cinput]').forEach(i=>i.onchange=()=>setQty(+i.dataset.cinput,Math.max(0,parseInt(i.value)||0)));document.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>setQty(+b.dataset.remove,0))}
 function orderText(){const t=totals();let lines=Object.entries(cart).map(([id,q])=>{const p=raw.find(x=>x.id==id);return `• ${p.name} × ${q} = ${money(p.price*q)}`});return `${STORE_NAME} — Order Enquiry\n\n${lines.join('\n')}\n\nSubtotal: ${money(t.sub)}\nPacking (5%): ${money(t.pack)}\nTotal: ${money(t.total)}\n\nName: ${document.getElementById('customerName').value||'-'}\nMobile: ${document.getElementById('customerPhone').value||'-'}\nCity: ${document.getElementById('customerCity').value||'-'}\nAddress: ${document.getElementById('customerAddress').value||'-'}`}
 const drawer=document.getElementById('drawer'),backdrop=document.getElementById('backdrop'),modal=document.getElementById('modal');function openCart(){drawer.classList.add('open');backdrop.classList.add('open')}function closeCart(){drawer.classList.remove('open');backdrop.classList.remove('open')}
-document.getElementById('cartBtn').onclick=openCart;document.getElementById('closeCart').onclick=closeCart;backdrop.onclick=closeCart;document.getElementById('search').oninput=render;document.getElementById('clearBtn').onclick=()=>{cart={};save();render();renderCart()};document.getElementById('checkoutBtn').onclick=()=>{if(!totals().sub){alert('Please add products first.');return}if(totals().sub<minimumOrder){alert(`Minimum order is ${money(minimumOrder)}.`);return}modal.classList.add('show')};document.getElementById('modalClose').onclick=()=>modal.classList.remove('show');document.getElementById('emailBtn').onclick=async()=>{
+document.getElementById('cartBtn').onclick=openCart;document.getElementById('closeCart').onclick=closeCart;backdrop.onclick=closeCart;document.getElementById('search').oninput=render;document.getElementById('clearBtn').onclick=()=>{cart={};save();render();renderCart()};document.getElementById('checkoutBtn').onclick=()=>{if(!totals().sub){alert('Please add products first.');return}if(totals().sub<minimumOrder){alert(`Minimum order is ${money(minimumOrder)}.`);return}modal.classList.add('show')};document.getElementById('modalClose').onclick=()=>modal.classList.remove('show');async function generateOrderPDF(){
+  if(!window.jspdf||!window.jspdf.jsPDF) throw new Error('PDF library failed to load.');
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  const t=totals();
+  const name=document.getElementById('customerName').value.trim()||'-';
+  const phone=document.getElementById('customerPhone').value.trim()||'-';
+  const city=document.getElementById('customerCity').value.trim()||'-';
+  const address=document.getElementById('customerAddress').value.trim()||'-';
+  const now=new Date();
+  const orderId='CK'+now.getFullYear()+String(now.getMonth()+1).padStart(2,'0')+String(now.getDate()).padStart(2,'0')+'-'+String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0')+String(now.getSeconds()).padStart(2,'0');
+  const filename='CrackerKart_Order_'+orderId+'.pdf';
+  const pageW=doc.internal.pageSize.getWidth();
+  let y=18;
+
+  doc.setFont('helvetica','bold'); doc.setFontSize(20); doc.text(STORE_NAME,pageW/2,y,{align:'center'});
+  y+=8; doc.setFontSize(12); doc.text('DIWALI 2026 ORDER',pageW/2,y,{align:'center'});
+  y+=10; doc.setFont('helvetica','normal'); doc.setFontSize(9);
+  doc.text('Order ID: '+orderId,14,y); doc.text('Date: '+now.toLocaleString('en-IN'),pageW-14,y,{align:'right'});
+  y+=8; doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.text('Customer Details',14,y); y+=6;
+  doc.setFont('helvetica','normal'); doc.setFontSize(9);
+  doc.text('Name: '+name,14,y); y+=5; doc.text('Mobile: '+phone,14,y); y+=5; doc.text('City: '+city,14,y); y+=5;
+  const addressLines=doc.splitTextToSize('Address: '+address,182); doc.text(addressLines,14,y); y+=addressLines.length*5+6;
+
+  const cols=[14,94,113,137,163,196];
+  doc.setFillColor(245,245,245); doc.rect(14,y-4,182,8,'F');
+  doc.setFont('helvetica','bold'); doc.text('Item',14,y); doc.text('Qty',100,y,{align:'right'}); doc.text('MRP',128,y,{align:'right'}); doc.text('Price',153,y,{align:'right'}); doc.text('Total',196,y,{align:'right'});
+  y+=7; doc.setFont('helvetica','normal');
+
+  for(const [id,q] of Object.entries(cart)){
+    const p=raw.find(x=>x.id==id); if(!p) continue;
+    const itemLines=doc.splitTextToSize(p.name,76);
+    const rowH=Math.max(6,itemLines.length*4.5);
+    if(y+rowH>276){doc.addPage();y=18;}
+    doc.text(itemLines,14,y);
+    doc.text(String(q),100,y,{align:'right'});
+    doc.text(money(p.base),128,y,{align:'right'});
+    doc.text(money(p.price),153,y,{align:'right'});
+    doc.text(money(p.price*q),196,y,{align:'right'});
+    y+=rowH+2;
+    doc.setDrawColor(220,220,220); doc.line(14,y-1,196,y-1);
+  }
+
+  y+=5;
+  if(y>260){doc.addPage();y=18;}
+  doc.setFont('helvetica','normal'); doc.text('Subtotal',150,y,{align:'right'}); doc.text(money(t.sub),196,y,{align:'right'}); y+=6;
+  doc.text('Packing (5%)',150,y,{align:'right'}); doc.text(money(t.pack),196,y,{align:'right'}); y+=7;
+  doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.text('Grand Total',150,y,{align:'right'}); doc.text(money(t.total),196,y,{align:'right'});
+  y+=12; doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.text('Thank you for your order!',pageW/2,y,{align:'center'});
+  const blob=doc.output('blob');
+  return {blob,filename,orderId};
+}
+document.getElementById('emailBtn').onclick=async()=>{
   if(!ORDER_EMAIL){alert('Order email is not configured.');return}
   if(!totals().sub){alert('Please add products first.');return}
   if(totals().sub<minimumOrder){alert(`Minimum order is ${money(minimumOrder)}.`);return}
 
+  const name=document.getElementById('customerName').value.trim();
+  const phone=document.getElementById('customerPhone').value.trim();
+  if(!name||!phone){alert('Please enter your name and mobile number.');return}
+
   const btn=document.getElementById('emailBtn');
   const original=btn.textContent;
   btn.disabled=true;
-  btn.textContent='Sending…';
-
-  const formData=new FormData();
-  formData.append('to',ORDER_EMAIL);
-  formData.append('subject',STORE_NAME+' — New Order Enquiry');
-  formData.append('body',orderText());
-  formData.append('customerName',document.getElementById('customerName').value.trim());
-  formData.append('customerPhone',document.getElementById('customerPhone').value.trim());
-  formData.append('customerCity',document.getElementById('customerCity').value.trim());
-  formData.append('customerAddress',document.getElementById('customerAddress').value.trim());
-  formData.append('orderTotal',String(totals().total));
+  btn.textContent='Creating PDF…';
 
   try{
+    const pdf=await generateOrderPDF();
+
+    // Download the customer's copy immediately. This does not depend on the email API.
+    const downloadUrl=URL.createObjectURL(pdf.blob);
+    const link=document.createElement('a');
+    link.href=downloadUrl;
+    link.download=pdf.filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(()=>URL.revokeObjectURL(downloadUrl),1000);
+
+    btn.textContent='Sending order…';
+
+    const formData=new FormData();
+    formData.append('to',ORDER_EMAIL);
+    formData.append('subject',STORE_NAME+' — New Order '+pdf.orderId);
+    formData.append('body',orderText());
+    formData.append('customerName',name);
+    formData.append('customerPhone',phone);
+    formData.append('customerCity',document.getElementById('customerCity').value.trim());
+    formData.append('customerAddress',document.getElementById('customerAddress').value.trim());
+    formData.append('orderTotal',String(totals().total));
+    formData.append('pdf',pdf.blob,pdf.filename);
+
     const response=await fetch('https://vihaancrackersbackend-50022550740.development.catalystappsail.in/api/email/send',{method:'POST',body:formData});
     if(!response.ok) throw new Error('HTTP '+response.status);
-    alert('Order submitted successfully. We will contact you shortly.');
+
+    alert('Order submitted successfully. Your order PDF has also been downloaded.');
     modal.classList.remove('show');
   }catch(error){
-    console.error('Order email failed:',error);
-    alert('We could not submit the order right now. Please try again.');
+    console.error('Order submission failed:',error);
+    if(error.message==='PDF library failed to load.'){
+      alert('Could not create the order PDF. Please check your internet connection and try again.');
+    }else{
+      alert('Your order PDF was created/downloaded, but the email could not be sent right now. Please keep the PDF and contact us if needed.');
+    }
   }finally{
     btn.disabled=false;
     btn.textContent=original;
