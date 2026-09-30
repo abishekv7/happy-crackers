@@ -2,7 +2,7 @@
   "name": "crackerkart-order-backend",
   "version": "1.0.0",
   "private": true,
-  "description": "CrackerKart Catalyst AppSail backend for order emails with PDF attachments",
+  "description": "CrackerKart backend for order emails with PDF attachments",
   "main": "index.js",
   "scripts": { "start": "node index.js" },
   "engines": { "node": "20.x" },
