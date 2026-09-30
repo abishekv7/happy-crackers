@@ -3,7 +3,13 @@ const STORE_NAME = 'CrackerKart';
 const ORDER_EMAIL = 'abishekv178@gmail.com';
 // ==================================================
 
-const hike = 1.20;
+const markupOnSellingPrice = 1.20;
+// Source selling prices that differ from 20% of MRP.
+const sourceSellingPriceOverrides = {
+  '1K SPECIAL FESTIVAL CRACKERS - BOX': 250,
+  '6" WOLF / BLACK TERROR - BOX': 850,
+  'EMU FIRE EGG - BOX': 1000
+};
 const packingRate = 0.05;
 const minimumOrder = 3000;
 
@@ -26,7 +32,7 @@ const raw = [
 ['Fantasy Items','MAGIZH BAT AND BALL - BOX',1000],['Fantasy Items','MAGIZH SWORD - BOX',650],['Fantasy Items','MAGIZH HEIST - BOX',1000],['Fantasy Items','SMOKY STICK - BOX',300],['Fantasy Items','MAGIZH GUN SQUAD - BOX',1000],['Fantasy Items','MAGIZH DOUBLE SNAKE - BOX',1000],['Fantasy Items','MAGIZH FLASH CANDLE - 5 PCS - BOX',500],['Fantasy Items','MAGIZH LOLLIPOP - BOX',1000],['Fantasy Items','MAGIZH SMILEY CANDLE - 2 PCS - BOX',750],['Fantasy Items','PHOTO FLASH - BOX',400],['Fantasy Items','MAGIZH FISH - BOX',700],['Fantasy Items','MAGIZH KATHAM - BOX',1000],['Fantasy Items','MAGIZH FANTASY ELEPHANT - BOX',1000],['Fantasy Items','MAGIZH SIREN - 3 PCS - BOX',950],['Fantasy Items','BAMBARAM (10 PCS) - BOX',500],['Fantasy Items','EMU FIRE EGG - BOX',1200],['Fantasy Items','BUTTERFLY - BOX',450],['Fantasy Items','HELICOPTER - BOX',500],['Fantasy Items','DRONE - BOX',900],['Fantasy Items','MAGIZH FANTASY LION - BOX',1000],['Fantasy Items','MAGIZH SMOKY - BOX',900],['Fantasy Items','SHINCHAN CRACKLING - BOX',700],['Fantasy Items','MAGIZH KULFI - BOX',1000],['Fantasy Items','MAGIZH WATERMELON/KIWI - BOX',1000],['Fantasy Items','CYLINDER BOMB - BOX',700],
 ['Matchbox Crackers','HERO CLASSIC 3 IN 1 - BOX',350],['Matchbox Crackers','MAJESTY MISHMASH MATCHES - 5 IN 1 - BOX',900],['Matchbox Crackers','MAJESTY FANTASY MEGA LAPTOP 10 IN 1 - BOX',1900],
 ['Gift Boxes','21 ITEMS GIFT BOX - GIFT BOX',1900],['Gift Boxes','31 ITEMS GIFTBOX - GIFT BOX',3250],['Gift Boxes','41 ITEMS GIFT BOX - GIFT BOX',4500],['Gift Boxes','51 ITEM GIFT BOX - GIFT BOX',6500],['Gift Boxes','60 ITEM GIFT BOX - GIFT BOX',9000]
-].map((x,i)=>({id:i+1,category:x[0],name:x[1],base:x[2],price:Math.round(x[2]*hike*100)/100}));
+].map((x,i)=>{const mrp=x[2];const sourceSellingPrice=sourceSellingPriceOverrides[x[1]]??mrp*0.20;const price=Math.round(sourceSellingPrice*markupOnSellingPrice*100)/100;const displayMrp=Math.max(mrp,Math.floor(price)+1);return {id:i+1,category:x[0],name:x[1],base:displayMrp,sourceSellingPrice,price};});
 
 let cart={};
 try {
