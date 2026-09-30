@@ -16,11 +16,14 @@ app.use((req, res, next) => {
   const origin = req.headers.origin;
   // Browsers send origin "null" for file:// pages; treat it like no origin.
   const isAllowed = !origin || origin === 'null' || allowedOrigins.has(origin);
+  // Remove any duplicate header Catalyst's proxy may have already injected.
+  res.removeHeader('Access-Control-Allow-Origin');
   if (isAllowed) {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type');
-    res.header('Access-Control-Max-Age', '86400');
+    res.setHeader('Access-Control-Allow-Origin', origin && origin !== 'null' ? origin : '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Max-Age', '86400');
+    res.setHeader('Vary', 'Origin');
   }
   if (req.method === 'OPTIONS') {
     if (!isAllowed) return res.status(403).end();
