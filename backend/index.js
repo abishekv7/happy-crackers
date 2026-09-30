@@ -1,8 +1,6 @@
 const express = require('express');
 const multer = require('multer');
 const nodemailer = require('nodemailer');
-const fs = require('fs');
-const path = require('path');
 
 const app = express();
 
@@ -39,7 +37,7 @@ const upload = multer({
   limits: { fileSize: 15 * 1024 * 1024 }
 });
 
-const PORT = process.env.X_ZOHO_CATALYST_LISTEN_PORT || 9000;
+const PORT = process.env.PORT || process.env.X_ZOHO_CATALYST_LISTEN_PORT || 9000;
 const GMAIL_USER = process.env.GMAIL_USER || '';
 const GMAIL_PASS = (process.env.GMAIL_PASS || '').replace(/\s/g, '');
 const TO_EMAIL = 'abishekv178@gmail.com';
