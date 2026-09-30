@@ -3,7 +3,7 @@ const STORE_NAME = 'CrackerKart';
 const ORDER_EMAIL = 'abishekv178@gmail.com';
 // ==================================================
 
-const sellingPriceRate = 0.40; // Selling price is 25% of MRP
+const sellingPriceRate = 0.33; // Selling price is 25% of MRP
 const packingRate = 0.04;
 const minimumOrder = 3500;
 
