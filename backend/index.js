@@ -40,9 +40,10 @@ const upload = multer({
 });
 
 const PORT = process.env.X_ZOHO_CATALYST_LISTEN_PORT || 9000;
-const TO_EMAIL = 'abishekv178@gmail.com';
-const GMAIL_USER = 'abishekv178@gmail.com';   // e.g. yourstore@gmail.com
-const GMAIL_PASS = "hmrt datr msfs dmdr";   // 16-char Gmail App Password
+const GMAIL_USER = process.env.GMAIL_USER || '';
+// Store this in Catalyst AppSail environment variables. Never commit the app password.
+const GMAIL_PASS = (process.env.GMAIL_APP_PASSWORD || '').replace(/\s/g, '');
+const TO_EMAIL = process.env.TO_EMAIL || GMAIL_USER;
 
 function createTransporter() {
   return nodemailer.createTransport({
@@ -85,6 +86,13 @@ app.post('/api/email/send', upload.single('pdf'), async (req, res) => {
       'Order Total: ' + (orderTotal || '-')
     ].join('\n');
 
+    console.log('[EMAIL] Sending order email', {
+      to: TO_EMAIL,
+      customer: customerName,
+      orderTotal: orderTotal || '-',
+      attachment: req.file.originalname || 'CrackerKart_Order.pdf'
+    });
+
     const transporter = createTransporter();
 
     await transporter.sendMail({
@@ -99,9 +107,10 @@ app.post('/api/email/send', upload.single('pdf'), async (req, res) => {
       }]
     });
 
+    console.log('[EMAIL] Order email sent successfully');
     return res.json({ ok: true, message: 'Order email sent successfully.' });
   } catch (error) {
-    console.error('Order email error:', error);
+    console.error('[EMAIL] Order email error:', error);
     return res.status(500).json({
       ok: false,
       error: error && error.message ? error.message : 'Failed to send email.'
@@ -114,4 +123,18 @@ app.use((err, req, res, next) => {
   res.status(500).json({ ok: false, error: err.message || 'Internal server error.' });
 });
 
-app.listen(PORT, () => console.log('CrackerKart backend listening on port ' + PORT));
+app.listen(PORT, () => {
+  console.log('[STARTUP] CrackerKart backend listening on port ' + PORT);
+  console.log('[STARTUP] Gmail user configured:', Boolean(GMAIL_USER));
+  console.log('[STARTUP] Gmail app password configured:', Boolean(GMAIL_PASS));
+  console.log('[STARTUP] Recipient:', TO_EMAIL || '(missing)');
+
+  if (!GMAIL_USER || !GMAIL_PASS) {
+    console.error('[STARTUP] Gmail credentials are missing. Set GMAIL_USER and GMAIL_APP_PASSWORD in Catalyst AppSail environment variables.');
+    return;
+  }
+
+  createTransporter().verify()
+    .then(() => console.log('[STARTUP] Gmail SMTP authentication verified successfully'))
+    .catch(error => console.error('[STARTUP] Gmail SMTP verification failed:', error && error.message ? error.message : error));
+});
