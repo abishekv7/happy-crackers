@@ -28,7 +28,13 @@ const raw = [
 ['Gift Boxes','21 ITEMS GIFT BOX - GIFT BOX',1900],['Gift Boxes','31 ITEMS GIFTBOX - GIFT BOX',3250],['Gift Boxes','41 ITEMS GIFT BOX - GIFT BOX',4500],['Gift Boxes','51 ITEM GIFT BOX - GIFT BOX',6500],['Gift Boxes','60 ITEM GIFT BOX - GIFT BOX',9000]
 ].map((x,i)=>({id:i+1,category:x[0],name:x[1],base:x[2],price:Math.round(x[2]*hike*100)/100}));
 
-let cart=JSON.parse(localStorage.getItem('crackerCart')||'{}');
+let cart={};
+try {
+  const savedCart=JSON.parse(localStorage.getItem('crackerCart')||'{}');
+  if(savedCart && typeof savedCart==='object' && !Array.isArray(savedCart)) cart=savedCart;
+} catch(error) {
+  console.warn('Saved cart could not be read; starting with an empty cart.',error);
+}
 const money=n=>'₹'+n.toLocaleString('en-IN',{maximumFractionDigits:2});
 const categories=['All',...new Set(raw.map(x=>x.category))]; let active='All';
 const catalogue=document.getElementById('catalogue');
@@ -39,7 +45,7 @@ function render(){renderChips();const q=document.getElementById('search').value.
 function card(p){const q=cart[p.id]||0;return `<article class="product"><div class="product-top"><h3>${escapeHtml(p.name)}</h3><span class="tag">+20%</span></div><div class="old">Source price ${money(p.base)}</div><div class="price">${money(p.price)}</div><div class="controls"><div class="qty"><button data-minus="${p.id}">−</button><input data-qty="${p.id}" type="number" min="0" value="${q}"><button data-plus="${p.id}">+</button></div><button class="add" data-add="${p.id}">${q?'Update':'Add'}</button></div></article>`}
 function add(id){setQty(id,(cart[id]||0)+1)}
 function setQty(id,n){if(n<=0)delete cart[id];else cart[id]=n;save();render();renderCart()}
-function save(){localStorage.setItem('crackerCart',JSON.stringify(cart));document.getElementById('cartCount').textContent=Object.values(cart).reduce((a,b)=>a+b,0)}
+function save(){try{localStorage.setItem('crackerCart',JSON.stringify(cart))}catch(error){console.warn('Cart could not be saved in this browser.',error)}document.getElementById('cartCount').textContent=Object.values(cart).reduce((a,b)=>a+b,0)}
 function totals(){let sub=Object.entries(cart).reduce((s,[id,q])=>s+raw.find(p=>p.id==id).price*q,0);let pack=sub*packingRate;return {sub,pack,total:sub+pack}}
 function renderCart(){const items=Object.entries(cart).map(([id,q])=>({p:raw.find(p=>p.id==id),q}));document.getElementById('cartItems').innerHTML=items.length?items.map(({p,q})=>`<div class="cart-row"><div><strong>${escapeHtml(p.name)}</strong><br><small>${money(p.price)} × ${q}</small></div><b>${money(p.price*q)}</b><div class="row-controls"><div class="qty"><button data-cminus="${p.id}">−</button><input data-cinput="${p.id}" value="${q}" type="number" min="0"><button data-cplus="${p.id}">+</button></div><button class="remove" data-remove="${p.id}">Remove</button></div></div>`).join(''):'<div class="empty">Your cart is empty.</div>';const t=totals();document.getElementById('subtotal').textContent=money(t.sub);document.getElementById('packing').textContent=money(t.pack);document.getElementById('total').textContent=money(t.total);document.getElementById('minimumMsg').textContent=t.sub?`Minimum order: ${money(minimumOrder)} · ${t.sub<minimumOrder?money(minimumOrder-t.sub)+' more needed':''}`:`Minimum order: ${money(minimumOrder)}`;document.querySelectorAll('[data-cminus]').forEach(b=>b.onclick=()=>setQty(+b.dataset.cminus,(cart[b.dataset.cminus]||0)-1));document.querySelectorAll('[data-cplus]').forEach(b=>b.onclick=()=>setQty(+b.dataset.cplus,(cart[b.dataset.cplus]||0)+1));document.querySelectorAll('[data-cinput]').forEach(i=>i.onchange=()=>setQty(+i.dataset.cinput,Math.max(0,parseInt(i.value)||0)));document.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>setQty(+b.dataset.remove,0))}
 function orderText(){const t=totals();let lines=Object.entries(cart).map(([id,q])=>{const p=raw.find(x=>x.id==id);return `• ${p.name} × ${q} = ${money(p.price*q)}`});return `${STORE_NAME} — Order Enquiry\n\n${lines.join('\n')}\n\nSubtotal: ${money(t.sub)}\nPacking (5%): ${money(t.pack)}\nTotal: ${money(t.total)}\n\nName: ${document.getElementById('customerName').value||'-'}\nMobile: ${document.getElementById('customerPhone').value||'-'}\nCity: ${document.getElementById('customerCity').value||'-'}\nAddress: ${document.getElementById('customerAddress').value||'-'}`}
