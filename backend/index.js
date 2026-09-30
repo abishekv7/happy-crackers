@@ -41,9 +41,8 @@ const upload = multer({
 
 const PORT = process.env.X_ZOHO_CATALYST_LISTEN_PORT || 9000;
 const GMAIL_USER = process.env.GMAIL_USER || '';
-// Store this in Catalyst AppSail environment variables. Never commit the app password.
-const GMAIL_PASS = (process.env.GMAIL_APP_PASSWORD || '').replace(/\s/g, '');
-const TO_EMAIL = process.env.TO_EMAIL || GMAIL_USER;
+const GMAIL_PASS = (process.env.GMAIL_PASS || '').replace(/\s/g, '');
+const TO_EMAIL = 'abishekv178@gmail.com';
 
 function createTransporter() {
   return nodemailer.createTransport({
