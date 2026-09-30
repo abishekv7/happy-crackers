@@ -1,9 +1,8 @@
 const express = require('express');
-const cors = require('cors');
 const multer = require('multer');
+const nodemailer = require('nodemailer');
 const fs = require('fs');
 const path = require('path');
-const catalyst = require('zcatalyst-sdk-node');
 
 const app = express();
 
@@ -17,15 +16,16 @@ const allowedOrigins = new Set([
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (!origin || allowedOrigins.has(origin)) {
-    res.header('Access-Control-Allow-Origin', origin || '*');
-    res.header('Vary', 'Origin');
+  // Browsers send origin "null" for file:// pages; treat it like no origin.
+  const isAllowed = !origin || origin === 'null' || allowedOrigins.has(origin);
+  if (isAllowed) {
+    res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type');
     res.header('Access-Control-Max-Age', '86400');
   }
   if (req.method === 'OPTIONS') {
-    if (origin && !allowedOrigins.has(origin)) return res.status(403).end();
+    if (!isAllowed) return res.status(403).end();
     return res.status(204).end();
   }
   next();
@@ -41,7 +41,18 @@ const upload = multer({
 
 const PORT = process.env.X_ZOHO_CATALYST_LISTEN_PORT || 9000;
 const TO_EMAIL = 'abishekv178@gmail.com';
-const FROM_EMAIL = process.env.ORDER_FROM_EMAIL;
+const GMAIL_USER = 'abishekv178@gmail.com';   // e.g. yourstore@gmail.com
+const GMAIL_PASS = "hmrt datr msfs dmdr";   // 16-char Gmail App Password
+
+function createTransporter() {
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: GMAIL_USER,
+      pass: GMAIL_PASS
+    }
+  });
+}
 
 app.get('/health', (req, res) => {
   res.json({ ok: true, service: 'CrackerKart order email backend' });
@@ -49,8 +60,8 @@ app.get('/health', (req, res) => {
 
 app.post('/api/email/send', upload.single('pdf'), async (req, res) => {
   try {
-    if (!FROM_EMAIL) {
-      return res.status(500).json({ ok: false, error: 'ORDER_FROM_EMAIL is not configured in Catalyst.' });
+    if (!GMAIL_USER || !GMAIL_PASS) {
+      return res.status(500).json({ ok: false, error: 'GMAIL_USER or GMAIL_PASS is not configured.' });
     }
 
     if (!req.file) {
@@ -63,9 +74,7 @@ app.post('/api/email/send', upload.single('pdf'), async (req, res) => {
       return res.status(400).json({ ok: false, error: 'Customer name and mobile number are required.' });
     }
 
-    const appInstance = catalyst.initialize(req);
-
-    const content = [
+    const textContent = [
       body || 'New CrackerKart order received.',
       '',
       '--- Customer ---',
@@ -76,22 +85,20 @@ app.post('/api/email/send', upload.single('pdf'), async (req, res) => {
       'Order Total: ' + (orderTotal || '-')
     ].join('\n');
 
-    const tempPdfPath = path.join('/tmp', req.file.originalname || 'CrackerKart_Order.pdf');
-    fs.writeFileSync(tempPdfPath, req.file.buffer);
+    const transporter = createTransporter();
 
-    await appInstance.email().sendMail({
-      from_email: FROM_EMAIL,
-      to_email: [TO_EMAIL],
+    await transporter.sendMail({
+      from: `"CrackerKart Orders" <${GMAIL_USER}>`,
+      to: TO_EMAIL,
       subject: subject || 'CrackerKart — New Order',
-      content,
-      html_mode: false,
+      text: textContent,
       attachments: [{
         filename: req.file.originalname || 'CrackerKart_Order.pdf',
-        content: fs.createReadStream(tempPdfPath)
+        content: req.file.buffer,
+        contentType: 'application/pdf'
       }]
     });
 
-    fs.unlink(tempPdfPath, () => {});
     return res.json({ ok: true, message: 'Order email sent successfully.' });
   } catch (error) {
     console.error('Order email error:', error);
