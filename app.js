@@ -62,6 +62,8 @@ document.getElementById('cartBtn').onclick=openCart;document.getElementById('clo
   const now=new Date();
   const orderId='CK'+now.getFullYear()+String(now.getMonth()+1).padStart(2,'0')+String(now.getDate()).padStart(2,'0')+'-'+String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0')+String(now.getSeconds()).padStart(2,'0');
   const filename='CrackerKart_Order_'+orderId+'.pdf';
+  // jsPDF's default Helvetica font does not support the ₹ glyph reliably, so use Rs. in the PDF.
+  const pdfMoney=n=>'Rs. '+n.toLocaleString('en-IN',{maximumFractionDigits:2});
   const pageW=doc.internal.pageSize.getWidth();
   let y=18;
 
@@ -86,18 +88,18 @@ document.getElementById('cartBtn').onclick=openCart;document.getElementById('clo
     if(y+rowH>276){doc.addPage();y=18;}
     doc.text(itemLines,14,y);
     doc.text(String(q),100,y,{align:'right'});
-    doc.text(money(p.base),128,y,{align:'right'});
-    doc.text(money(p.price),153,y,{align:'right'});
-    doc.text(money(p.price*q),196,y,{align:'right'});
+    doc.text(pdfMoney(p.base),128,y,{align:'right'});
+    doc.text(pdfMoney(p.price),153,y,{align:'right'});
+    doc.text(pdfMoney(p.price*q),196,y,{align:'right'});
     y+=rowH+2;
     doc.setDrawColor(220,220,220); doc.line(14,y-1,196,y-1);
   }
 
   y+=5;
   if(y>260){doc.addPage();y=18;}
-  doc.setFont('helvetica','normal'); doc.text('Subtotal',150,y,{align:'right'}); doc.text(money(t.sub),196,y,{align:'right'}); y+=6;
-  doc.text('Packing (4%)',150,y,{align:'right'}); doc.text(money(t.pack),196,y,{align:'right'}); y+=7;
-  doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.text('Grand Total',150,y,{align:'right'}); doc.text(money(t.total),196,y,{align:'right'});
+  doc.setFont('helvetica','normal'); doc.text('Subtotal',150,y,{align:'right'}); doc.text(pdfMoney(t.sub),196,y,{align:'right'}); y+=6;
+  doc.text('Packing (4%)',150,y,{align:'right'}); doc.text(pdfMoney(t.pack),196,y,{align:'right'}); y+=7;
+  doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.text('Grand Total',150,y,{align:'right'}); doc.text(pdfMoney(t.total),196,y,{align:'right'});
   y+=12; doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.text('Thank you for your order!',pageW/2,y,{align:'center'});
   const blob=doc.output('blob');
   return {blob,filename,orderId};
