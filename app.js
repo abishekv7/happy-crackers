@@ -3,7 +3,7 @@ const STORE_NAME = 'CrackerKart';
 const ORDER_EMAIL = 'abishekv178@gmail.com';
 // ==================================================
 
-const sellingPriceRate = 0.28; // Selling price is 25% of MRP
+const sellingPriceRate = 0.28; // Selling price is 28% of MRP
 const packingRate = 0.04;
 const minimumOrder = 3500;
 
@@ -42,7 +42,7 @@ const chips=document.getElementById('chips');
 function renderChips(){chips.innerHTML=categories.map(c=>`<button class="chip ${c===active?'active':''}" data-cat="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join('');chips.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{active=b.dataset.cat;render()})}
 function escapeHtml(s){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function render(){renderChips();const q=document.getElementById('search').value.trim().toLowerCase();let groups={};raw.filter(p=>(active==='All'||p.category===active)&&(!q||p.name.toLowerCase().includes(q))).forEach(p=>{(groups[p.category]??=[]).push(p)});if(!Object.keys(groups).length){catalogue.innerHTML='<div class="empty">No products found.</div>';return}catalogue.innerHTML=Object.entries(groups).map(([cat,items])=>`<section class="category"><h2>${escapeHtml(cat)}</h2><div class="grid">${items.map(card).join('')}</div></section>`).join('');catalogue.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>add(+b.dataset.add));catalogue.querySelectorAll('[data-qty]').forEach(i=>i.onchange=()=>{let n=Math.max(0,parseInt(i.value)||0);setQty(+i.dataset.qty,n)});catalogue.querySelectorAll('[data-minus]').forEach(b=>b.onclick=()=>setQty(+b.dataset.minus,(cart[b.dataset.minus]||0)-1));catalogue.querySelectorAll('[data-plus]').forEach(b=>b.onclick=()=>setQty(+b.dataset.plus,(cart[b.dataset.plus]||0)+1))}
-function card(p){const q=cart[p.id]||0;return `<article class="product"><div class="product-top"><h3>${escapeHtml(p.name)}</h3><span class="tag">75% OFF</span></div><div class="old">MRP ${money(p.base)}</div><div class="price">${money(p.price)}</div><div class="controls"><div class="qty"><button data-minus="${p.id}">−</button><input data-qty="${p.id}" type="number" min="0" value="${q}"><button data-plus="${p.id}">+</button></div><button class="add" data-add="${p.id}">${q?'Update':'Add'}</button></div></article>`}
+function card(p){const q=cart[p.id]||0;return `<article class="product"><div class="product-top"><h3>${escapeHtml(p.name)}</h3><span class="tag">${Math.round((1-sellingPriceRate)*100)}% OFF</span></div><div class="old">MRP ${money(p.base)}</div><div class="price">${money(p.price)}</div><div class="controls"><div class="qty"><button data-minus="${p.id}">−</button><input data-qty="${p.id}" type="number" min="0" value="${q}"><button data-plus="${p.id}">+</button></div><button class="add" data-add="${p.id}">${q?'Update':'Add'}</button></div></article>`}
 function add(id){setQty(id,(cart[id]||0)+1)}
 function setQty(id,n){if(n<=0)delete cart[id];else cart[id]=n;save();render();renderCart()}
 function save(){try{localStorage.setItem('crackerCart',JSON.stringify(cart))}catch(error){console.warn('Cart could not be saved in this browser.',error)}const cartTotal=Object.values(cart).reduce((a,b)=>a+b,0);document.getElementById('cartCount').textContent=cartTotal;const floatingCount=document.getElementById('floatingCartCount');if(floatingCount) floatingCount.textContent=cartTotal}
