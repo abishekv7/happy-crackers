@@ -144,7 +144,7 @@ document.getElementById('emailBtn').onclick=async()=>{
     formData.append('orderTotal',String(totals().total));
     formData.append('pdf',pdf.blob,pdf.filename);
 
-    const response=await fetch('https://crackerkart-email-50046429381.development.catalystappsail.in/api/email/send',{method:'POST',body:formData});
+    const response=await fetch('https://vihaancrackersbackend-50022550740.development.catalystappsail.in/api/email/send',{method:'POST',body:formData});
     if(!response.ok) throw new Error('HTTP '+response.status);
 
     // Order is successfully submitted: clear cart data and reset the checkout form.
