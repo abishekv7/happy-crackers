@@ -147,6 +147,16 @@ document.getElementById('emailBtn').onclick=async()=>{
     const response=await fetch('https://crackerkart-email-50046429381.development.catalystappsail.in/api/email/send',{method:'POST',body:formData});
     if(!response.ok) throw new Error('HTTP '+response.status);
 
+    // Order is successfully submitted: clear cart data and reset the checkout form.
+    cart={};
+    save();
+    render();
+    renderCart();
+    document.getElementById('customerName').value='';
+    document.getElementById('customerPhone').value='';
+    document.getElementById('customerCity').value='';
+    document.getElementById('customerAddress').value='';
+    closeCart();
     alert('Order submitted successfully. Your order PDF has also been downloaded.');
     modal.classList.remove('show');
   }catch(error){
