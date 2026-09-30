@@ -4,8 +4,8 @@ const ORDER_EMAIL = 'abishekv178@gmail.com';
 // ==================================================
 
 const sellingPriceRate = 0.25; // Selling price is 25% of MRP
-const packingRate = 0.05;
-const minimumOrder = 3000;
+const packingRate = 0.04;
+const minimumOrder = 3500;
 
 const raw = [
 ['Single Sound Crackers','2¾" KURUVI - PKT',40],['Single Sound Crackers','3.5" DUCK - PKT',70],['Single Sound Crackers','4" LAKSHMI - 1 PKT',100],['Single Sound Crackers','4" DELUXE LAKSHMI/PANDA - BOX',175],['Single Sound Crackers','4" GOLD LAKSHMI - 1 PKT',200],['Single Sound Crackers','2 SOUND CRACKERS - BOX',200],['Single Sound Crackers','5" DELUXE - BOX',350],
@@ -48,7 +48,7 @@ function setQty(id,n){if(n<=0)delete cart[id];else cart[id]=n;save();render();re
 function save(){try{localStorage.setItem('crackerCart',JSON.stringify(cart))}catch(error){console.warn('Cart could not be saved in this browser.',error)}document.getElementById('cartCount').textContent=Object.values(cart).reduce((a,b)=>a+b,0)}
 function totals(){let sub=Object.entries(cart).reduce((s,[id,q])=>s+raw.find(p=>p.id==id).price*q,0);let pack=sub*packingRate;return {sub,pack,total:sub+pack}}
 function renderCart(){const items=Object.entries(cart).map(([id,q])=>({p:raw.find(p=>p.id==id),q}));document.getElementById('cartItems').innerHTML=items.length?items.map(({p,q})=>`<div class="cart-row"><div><strong>${escapeHtml(p.name)}</strong><br><small>${money(p.price)} × ${q}</small></div><b>${money(p.price*q)}</b><div class="row-controls"><div class="qty"><button data-cminus="${p.id}">−</button><input data-cinput="${p.id}" value="${q}" type="number" min="0"><button data-cplus="${p.id}">+</button></div><button class="remove" data-remove="${p.id}">Remove</button></div></div>`).join(''):'<div class="empty">Your cart is empty.</div>';const t=totals();document.getElementById('subtotal').textContent=money(t.sub);document.getElementById('packing').textContent=money(t.pack);document.getElementById('total').textContent=money(t.total);document.getElementById('minimumMsg').textContent=t.sub?`Minimum order: ${money(minimumOrder)} · ${t.sub<minimumOrder?money(minimumOrder-t.sub)+' more needed':''}`:`Minimum order: ${money(minimumOrder)}`;document.querySelectorAll('[data-cminus]').forEach(b=>b.onclick=()=>setQty(+b.dataset.cminus,(cart[b.dataset.cminus]||0)-1));document.querySelectorAll('[data-cplus]').forEach(b=>b.onclick=()=>setQty(+b.dataset.cplus,(cart[b.dataset.cplus]||0)+1));document.querySelectorAll('[data-cinput]').forEach(i=>i.onchange=()=>setQty(+i.dataset.cinput,Math.max(0,parseInt(i.value)||0)));document.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>setQty(+b.dataset.remove,0))}
-function orderText(){const t=totals();let lines=Object.entries(cart).map(([id,q])=>{const p=raw.find(x=>x.id==id);return `• ${p.name} × ${q} = ${money(p.price*q)}`});return `${STORE_NAME} — Order Enquiry\n\n${lines.join('\n')}\n\nSubtotal: ${money(t.sub)}\nPacking (5%): ${money(t.pack)}\nTotal: ${money(t.total)}\n\nName: ${document.getElementById('customerName').value||'-'}\nMobile: ${document.getElementById('customerPhone').value||'-'}\nCity: ${document.getElementById('customerCity').value||'-'}\nAddress: ${document.getElementById('customerAddress').value||'-'}`}
+function orderText(){const t=totals();let lines=Object.entries(cart).map(([id,q])=>{const p=raw.find(x=>x.id==id);return `• ${p.name} × ${q} = ${money(p.price*q)}`});return `${STORE_NAME} — Order Enquiry\n\n${lines.join('\n')}\n\nSubtotal: ${money(t.sub)}\nPacking (4%): ${money(t.pack)}\nTotal: ${money(t.total)}\n\nName: ${document.getElementById('customerName').value||'-'}\nMobile: ${document.getElementById('customerPhone').value||'-'}\nCity: ${document.getElementById('customerCity').value||'-'}\nAddress: ${document.getElementById('customerAddress').value||'-'}`}
 const drawer=document.getElementById('drawer'),backdrop=document.getElementById('backdrop'),modal=document.getElementById('modal');function openCart(){drawer.classList.add('open');backdrop.classList.add('open')}function closeCart(){drawer.classList.remove('open');backdrop.classList.remove('open')}
 document.getElementById('cartBtn').onclick=openCart;document.getElementById('closeCart').onclick=closeCart;backdrop.onclick=closeCart;document.getElementById('search').oninput=render;document.getElementById('clearBtn').onclick=()=>{cart={};save();render();renderCart()};document.getElementById('checkoutBtn').onclick=()=>{if(!totals().sub){alert('Please add products first.');return}if(totals().sub<minimumOrder){alert(`Minimum order is ${money(minimumOrder)}.`);return}modal.classList.add('show')};document.getElementById('modalClose').onclick=()=>modal.classList.remove('show');async function generateOrderPDF(){
   if(!window.jspdf||!window.jspdf.jsPDF) throw new Error('PDF library failed to load.');
@@ -96,7 +96,7 @@ document.getElementById('cartBtn').onclick=openCart;document.getElementById('clo
   y+=5;
   if(y>260){doc.addPage();y=18;}
   doc.setFont('helvetica','normal'); doc.text('Subtotal',150,y,{align:'right'}); doc.text(money(t.sub),196,y,{align:'right'}); y+=6;
-  doc.text('Packing (5%)',150,y,{align:'right'}); doc.text(money(t.pack),196,y,{align:'right'}); y+=7;
+  doc.text('Packing (4%)',150,y,{align:'right'}); doc.text(money(t.pack),196,y,{align:'right'}); y+=7;
   doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.text('Grand Total',150,y,{align:'right'}); doc.text(money(t.total),196,y,{align:'right'});
   y+=12; doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.text('Thank you for your order!',pageW/2,y,{align:'center'});
   const blob=doc.output('blob');
