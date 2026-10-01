@@ -4,33 +4,10 @@ const nodemailer = require('nodemailer');
 
 const app = express();
 
-const allowedOrigins = new Set([
-  'https://abishekv7.github.io',
-  'https://happy-crackers.onslate.in',
-  'http://localhost:3000',
-  'http://127.0.0.1:5500',
-  'http://localhost:5500'
-]);
-
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  // Browsers send origin "null" for file:// pages; treat it like no origin.
-  const isAllowed = !origin || origin === 'null' || allowedOrigins.has(origin);
-  // Remove any duplicate header Catalyst's proxy may have already injected.
-  res.removeHeader('Access-Control-Allow-Origin');
-  if (isAllowed) {
-    res.setHeader('Access-Control-Allow-Origin', origin && origin !== 'null' ? origin : '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    res.setHeader('Access-Control-Max-Age', '86400');
-    res.setHeader('Vary', 'Origin');
-  }
-  if (req.method === 'OPTIONS') {
-    if (!isAllowed) return res.status(403).end();
-    return res.status(204).end();
-  }
-  next();
-});
+// Catalyst AppSail proxy already injects Access-Control-Allow-Origin.
+// Do NOT set any CORS headers in the app — adding them causes duplicates.
+// Handle OPTIONS preflight so the proxy can return 204 cleanly.
+app.options('*', (req, res) => res.status(204).end());
 
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
